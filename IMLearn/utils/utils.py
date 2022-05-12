@@ -1,12 +1,13 @@
+
 from typing import Tuple
 import numpy as np
 import pandas as pd
 
 
-def split_train_test(X: pd.DataFrame, y: pd.Series, train_proportion: float = .75) \
+def split_train_test(X: pd.DataFrame, y: pd.Series, train_proportion: float = .25) \
         -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
     """
-    Randomly split given sample to a training- and testing sample
+    Split given sample to a training- and testing sample
 
     Parameters
     ----------
@@ -33,7 +34,16 @@ def split_train_test(X: pd.DataFrame, y: pd.Series, train_proportion: float = .7
         Responses of test samples
 
     """
-    raise NotImplementedError()
+
+    # shuffle the indexes
+    X = X.sample(frac=1)
+    y = y.reindex_like(X)
+
+    # number of samples
+    n = int(np.ceil(train_proportion * len(y)))
+
+    return X[:n], y[:n], X[n:], y[n:]
+
 
 
 def confusion_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
