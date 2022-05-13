@@ -3,6 +3,7 @@ from typing import Tuple, NoReturn
 from ...base import BaseEstimator
 import numpy as np
 from itertools import product
+from IMLearn.metrics.loss_functions import misclassification_error
 
 
 class DecisionStump(BaseEstimator):
@@ -20,6 +21,7 @@ class DecisionStump(BaseEstimator):
     self.sign_: int
         The label to predict for samples where the value of the j'th feature is about the threshold
     """
+
     def __init__(self) -> DecisionStump:
         """
         Instantiate a Decision stump classifier
@@ -95,7 +97,28 @@ class DecisionStump(BaseEstimator):
         For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
         which equal to or above the threshold are predicted as `sign`
         """
-        raise NotImplementedError()
+        sorted_indexes = values.argsort()
+        values_sorted = values[sorted_indexes]
+        labels_sorted = labels[sorted_indexes]
+        # purpose - find the index i where all the next index-s, including i, are with the minimum values that are below TH
+
+        # vector that marks where the labels are under TH
+        under_TH = (np.where(labels_sorted >= 0, 1, -1) != sign).astype(int)
+        # amount of labels under TH
+        n_under_TH = np.sum(under_TH)
+        # reverse labels with opposite labels:
+        #  - reverse in order to see in the opposite side when cumsum
+        #  - multiply - for calculate the balance of under TH against g/e TH (favour for g/e TH)
+        #   ** meaning - if all of them will be sign - how many are correct after 'KIZUZUIM'
+        prep1 = (labels_sorted * sign)[::-1]
+        prep2 = np.cumsum(prep1)  # calculate the balance from the end to the start
+        TH_balance = prep2[::-1]  # reverse ->  the balance of each index (including) until the end = number of good labeling until the index.
+        final_TH_balance = n_under_TH - TH_balance  # calculate amount of errors in total for each case /<- not necessary (could argmax on TH_balance)
+        min_val_ind = np.argmin(final_TH_balance)
+        y_pred = np.concatenate((-sign * np.ones(min_val_ind), sign * np.ones(labels_sorted.shape[0] - min_val_ind)))
+        loss = 1 - np.mean((labels_sorted - y_pred == 0).astype(int))
+
+        return values_sorted[min_val_ind], loss
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -114,4 +137,9 @@ class DecisionStump(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
+
+        y_pred = self.predict(X)
+        y_true = np.where(y >= 0, 1, -1)
+        return misclassification_error(y_true, y_pred)
+
         raise NotImplementedError()
