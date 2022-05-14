@@ -43,26 +43,26 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     (X_train, Y_train), (X_test, Y_test) = generate_data(train_size, noise), generate_data(test_size, noise)
 
     # Question 1: Train- and test errors of AdaBoost in noiseless case
-
     print("Q1 - start")
     adaboost_model = AdaBoost(wl=DecisionStump, iterations=n_learners)
     adaboost_model.fit(X_train, Y_train)
+
     print('\ngenerating graph...')
     fig1 = go.Figure(
         data=[
             go.Scatter(
                 x=np.linspace(1, n_learners, n_learners),
-                y=list(map(lambda n: adaboost_model.partial_loss(X_train, Y_train, int(n)), np.linspace(1, n_learners, n_learners))),
+                y=list(map(lambda x: adaboost_model.partial_loss(X_train, Y_train, int(x)), np.linspace(1, n_learners, n_learners))),
                 mode='markers+lines',
-                name="training data",
+                name="training error",
                 marker=dict(size=5, opacity=0.6),
                 line=dict(width=3)
             ),
             go.Scatter(
                 x=np.linspace(1, n_learners, n_learners),
-                y=list(map(lambda n: adaboost_model.partial_loss(X_test, Y_test, int(n)), np.linspace(1, n_learners, n_learners))),
+                y=list(map(lambda x: adaboost_model.partial_loss(X_test, Y_test, int(x)), np.linspace(1, n_learners, n_learners))),
                 mode='markers+lines',
-                name="test data",
+                name="test error",
                 marker=dict(size=5, opacity=0.6),
                 line=dict(width=3)
             )
@@ -73,7 +73,6 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
             yaxis_title={'text': "$\\text{Misclassification error}$"}
         )
     )
-
     fig1.write_image("./q1.png")
     print("\nQ1 - end ************ \n\n")
 
@@ -100,8 +99,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
                                                 line=dict(color="black", width=1)))],
                         rows=(i // 2) + 1, cols=(i % 2) + 1)
 
-    fig2.update_layout(title_text=f"decision boundary obtained by using the  weighted ensembles of different sizes; with {noise} noise.", font_size=15,
-                       margin=dict(t=100))
+    fig2.update_layout(title_text=f"Decision boundary obtained by using the weighted ensembles of different sizes; with {noise} noise.",
+                       font_size=15, margin=dict(t=100))
 
     fig2.write_image("./q2.png")
     print("\nQ2 - end ************ \n\n")
@@ -109,19 +108,19 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     # Question 3: Decision surface of best performing ensemble
     print("Q3 - start")
     min_ind = np.argmin(np.array([adaboost_model.partial_loss(X_test, Y_test, t) for t in range(1, 251)]))
-    ensemble_size = min_ind + 1
+    best_ensemble_size = min_ind + 1
 
-    acc = accuracy(Y_test, adaboost_model.partial_predict(X_test, ensemble_size))
+    acc = accuracy(Y_test, adaboost_model.partial_predict(X_test, best_ensemble_size))
     print('\ngenerating graph...')
     fig3 = go.Figure(
-        [decision_surface(lambda x: adaboost_model.partial_predict(x, ensemble_size), lims[0], lims[1], showscale=False),
+        [decision_surface(lambda x: adaboost_model.partial_predict(x, best_ensemble_size), lims[0], lims[1], showscale=False),
          go.Scatter(x=X_test[:, 0], y=X_test[:, 1], mode="markers", showlegend=False,
                     marker=dict(color=Y_test,
                                 symbol='diamond',
                                 colorscale=[custom[0], custom[-1]],
                                 line=dict(color="black", width=1)))],
         layout=go.Layout(
-            title=f"the ensemble that achieves the lowest test error is ensemble of size {ensemble_size}, with accuracy of: {acc}; with {noise} noise.",
+            title=f"the ensemble that achieves the lowest test error is ensemble of size {best_ensemble_size}, with accuracy of: {acc}; with {noise} noise.",
             font_size=15
         )
     )
@@ -154,6 +153,6 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 if __name__ == '__main__':
     np.random.seed(0)
     fit_and_evaluate_adaboost(noise=0)
-    # fit_and_evaluate_adaboost(noise=0.4)  # q-5
+    fit_and_evaluate_adaboost(noise=0.4)  # q-5
 
 
