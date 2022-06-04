@@ -193,6 +193,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
     print(f"ridge test error: {ridge_test_error}")
     print(f"lasso test error: {lasso_test_error}")
 
+    #TODO: check if there is a need to add another matric of loos
 
     # # Question 8 - Compare best Ridge model, best Lasso model and Least Squares model
     # raise NotImplementedError()
