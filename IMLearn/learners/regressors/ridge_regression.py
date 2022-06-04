@@ -2,7 +2,16 @@ from __future__ import annotations
 from typing import NoReturn
 from ...base import BaseEstimator
 import numpy as np
+from typing import Callable
+from IMLearn.metrics.loss_functions import mean_square_error
 
+
+def adjust_to_intercept(method: Callable):
+    def wrapper(self, X, *args, **kwargs):
+        if self.include_intercept_:
+            X = np.concatenate((np.ones((len(X), 1), dtype=int), X), axis=1)
+        return method(self, X, *args, **kwargs)
+    return wrapper
 
 class RidgeRegression(BaseEstimator):
     """
@@ -43,6 +52,7 @@ class RidgeRegression(BaseEstimator):
         self.include_intercept_ = include_intercept
         self.lam_ = lam
 
+    @adjust_to_intercept
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
         Fit Ridge regression model to given samples
@@ -59,8 +69,14 @@ class RidgeRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        raise NotImplementedError()
 
+        U, S, Vt = np.linalg.svd(X, full_matrices=False)
+        valid_S_indexes = S > 1e-13
+        S_lam = np.zeros((S.size), dtype=X.dtype)
+        S_lam[valid_S_indexes] = S / (S** 2 + self.lam_)
+        self.coefs_ = Vt.T @ (S_lam * (U.T @ y))
+
+    @adjust_to_intercept
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict responses for given samples using fitted estimator
@@ -75,7 +91,7 @@ class RidgeRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        return X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -94,4 +110,5 @@ class RidgeRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        raise NotImplementedError()
+        y_pred = self.predict(X)
+        return mean_square_error(y, y_pred)
