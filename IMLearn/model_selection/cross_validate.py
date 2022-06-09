@@ -4,7 +4,7 @@ from typing import Tuple, Callable
 import numpy as np
 from IMLearn import BaseEstimator
 
-from tqdm import trange
+# from tqdm import trange
 
 
 def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
@@ -40,7 +40,9 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
         Average validation score over folds
     """
 
-    folds = np.remainder(np.arange(X.shape[0]), cv)
+    n_samples, *_ = X.shape
+
+    folds = np.remainder(np.arange(n_samples), cv)
     train_scores = np.zeros(cv)
     validation_scores = np.zeros(cv)
 

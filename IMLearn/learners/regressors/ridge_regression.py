@@ -10,8 +10,11 @@ def adjust_to_intercept(method: Callable):
     def wrapper(self, X, *args, **kwargs):
         if self.include_intercept_:
             X = np.concatenate((np.ones((len(X), 1), dtype=int), X), axis=1)
+        # X = np.concatenate((np.ones((len(X), 1), dtype=int), X), axis=1) if self.include_intercept_ else X
         return method(self, X, *args, **kwargs)
+
     return wrapper
+
 
 class RidgeRegression(BaseEstimator):
     """
@@ -42,7 +45,6 @@ class RidgeRegression(BaseEstimator):
             `LinearRegression.fit` function.
         """
 
-
         """
         Initialize a ridge regression model
         :param lam: scalar value of regularization parameter
@@ -71,10 +73,19 @@ class RidgeRegression(BaseEstimator):
         """
 
         U, S, Vt = np.linalg.svd(X, full_matrices=False)
-        valid_S_indexes = S > 1e-13
-        S_lam = np.zeros((S.size), dtype=X.dtype)
-        S_lam[valid_S_indexes] = S / (S** 2 + self.lam_)
-        self.coefs_ = Vt.T @ (S_lam * (U.T @ y))
+        valid_S_indexes = S > 0
+        S_lam = np.zeros(S.size)
+        S_lam[valid_S_indexes] = S / (S ** 2 + self.lam_)
+        if self.include_intercept_ and S[0] != 0:
+            S_lam[0] = 1 / S[0]
+        self.coefs_ = Vt.T @ (np.diag(S_lam) @ (U.T @ y))
+
+        # I_d = np.identity(X.shape[1])
+        # if self.include_intercept_:
+        #     I_d[0][0] = 0
+        # self.coefs_ = np.linalg.inv(X.T @ X + self.lam_ * I_d) @ X.T @ y
+
+        self.fitted_ = True
 
     @adjust_to_intercept
     def _predict(self, X: np.ndarray) -> np.ndarray:
@@ -110,5 +121,5 @@ class RidgeRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        y_pred = self.predict(X)
-        return mean_square_error(y, y_pred)
+        return mean_square_error(y, self.predict(X))
+
